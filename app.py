@@ -7,7 +7,7 @@ from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import StandardScaler
-from imblearn.over_sampling import SMOTE
+from imblearn.over_sampling import RandomOverSampler
 import os
 
 # =============================================
@@ -147,8 +147,8 @@ def train_models(X_train, y_train, X_test, y_test, rf_params=None, gb_params=Non
         try:
             min_samples = y_train.value_counts().min()
             if min_samples > 5:
-                smote = SMOTE(random_state=42, k_neighbors=min(5, min_samples-1))
-                X_res, y_res = smote.fit_resample(X_train_scaled, y_train)
+                ros = RandomOverSampler(random_state=42)
+                X_res, y_res = ros.fit_resample(X_train_scaled, y_train)
             else:
                 X_res, y_res = X_train_scaled, y_train
             
