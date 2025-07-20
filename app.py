@@ -2,6 +2,8 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
+import sklearn
+import sys
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
@@ -114,16 +116,19 @@ def engineer_features(df, threshold_std=1.5, window=3):
     return df.dropna()
 
 def train_models(X_train, y_train, X_test, y_test, rf_params=None, gb_params=None):
-    """Train and evaluate models"""
-    # Initialize parameters if None
+    """Train and evaluate models without imblearn dependency"""
     rf_params = rf_params or {}
     gb_params = gb_params or {}
+    
+    # Calculate class weights manually
+    class_counts = y_train.value_counts()
+    class_weights = {c: sum(class_counts)/len(class_counts)/count for c, count in class_counts.items()}
     
     models = {
         "Random Forest": RandomForestClassifier(
             n_estimators=rf_params.get('n_estimators', 200),
             max_depth=rf_params.get('max_depth', 10),
-            class_weight='balanced',
+            class_weight=class_weights,
             random_state=42
         ),
         "Gradient Boosting": GradientBoostingClassifier(
@@ -132,7 +137,7 @@ def train_models(X_train, y_train, X_test, y_test, rf_params=None, gb_params=Non
             random_state=42
         ),
         "Logistic Regression": LogisticRegression(
-            class_weight='balanced',
+            class_weight=class_weights,
             max_iter=1000,
             random_state=42
         )
@@ -145,14 +150,7 @@ def train_models(X_train, y_train, X_test, y_test, rf_params=None, gb_params=Non
     results = {}
     for name, model in models.items():
         try:
-            min_samples = y_train.value_counts().min()
-            if min_samples > 5:
-                ros = RandomOverSampler(random_state=42)
-                X_res, y_res = ros.fit_resample(X_train_scaled, y_train)
-            else:
-                X_res, y_res = X_train_scaled, y_train
-            
-            model.fit(X_res, y_res)
+            model.fit(X_train_scaled, y_train)
             y_pred = model.predict(X_test_scaled)
             
             results[name] = {
