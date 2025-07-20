@@ -2,14 +2,12 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 import plotly.express as px
-import sklearn
-import sys
 from sklearn.model_selection import train_test_split
 from sklearn.ensemble import RandomForestClassifier, GradientBoostingClassifier
 from sklearn.linear_model import LogisticRegression
 from sklearn.metrics import accuracy_score, f1_score
 from sklearn.preprocessing import StandardScaler
-from imblearn.over_sampling import RandomOverSampler
+from sklearn.utils.class_weight import compute_class_weight
 import os
 
 # =============================================
@@ -22,7 +20,7 @@ st.set_page_config(
     page_icon="🌤️"
 )
 
-# Custom CSS
+# Custom CSS (unchanged from original)
 st.markdown("""
 <style>
     :root {
@@ -67,7 +65,7 @@ st.markdown("""
 """, unsafe_allow_html=True)
 
 # =============================================
-# DATA & MODEL FUNCTIONS
+# DATA & MODEL FUNCTIONS (Modified)
 # =============================================
 @st.cache_data
 def load_data():
@@ -120,9 +118,10 @@ def train_models(X_train, y_train, X_test, y_test, rf_params=None, gb_params=Non
     rf_params = rf_params or {}
     gb_params = gb_params or {}
     
-    # Calculate class weights manually
-    class_counts = y_train.value_counts()
-    class_weights = {c: sum(class_counts)/len(class_counts)/count for c, count in class_counts.items()}
+    # Calculate class weights
+    classes = np.unique(y_train)
+    weights = compute_class_weight('balanced', classes=classes, y=y_train)
+    class_weights = dict(zip(classes, weights))
     
     models = {
         "Random Forest": RandomForestClassifier(
@@ -165,7 +164,7 @@ def train_models(X_train, y_train, X_test, y_test, rf_params=None, gb_params=Non
     return results
 
 # =============================================
-# INITIALIZATION & SESSION STATE
+# INITIALIZATION & SESSION STATE (unchanged)
 # =============================================
 def initialize_app():
     """Initialize session state"""
@@ -188,7 +187,7 @@ def initialize_app():
 initialize_app()
 
 # =============================================
-# AUTOMATIC INITIAL TRAINING
+# AUTOMATIC INITIAL TRAINING (modified)
 # =============================================
 if not st.session_state.initial_training_done:
     with st.spinner("Setting up air quality models..."):
@@ -222,14 +221,14 @@ if not st.session_state.initial_training_done:
             st.error(f"Initial setup failed: {str(e)}")
 
 # =============================================
-# MAIN APP INTERFACE
+# MAIN APP INTERFACE (unchanged)
 # =============================================
 st.title("🌤️ Air Quality Monitoring and Prediction System")
 
 # Tab selection
 user_tab, dev_tab = st.tabs(["For Everyone", "For Developers"])
 
-# USER-FACING TAB
+# USER-FACING TAB (unchanged)
 with user_tab:
     st.header("Check Air Quality Now")
     st.markdown("Enter current conditions to get air quality status.")
@@ -311,7 +310,7 @@ with user_tab:
                 except Exception as e:
                     st.error("Couldn't complete prediction. Please try again.")
 
-# DEVELOPER TAB
+# DEVELOPER TAB (unchanged)
 with dev_tab:
     st.header("Model Development Console")
     
@@ -383,7 +382,7 @@ with dev_tab:
                 </div>
                 """, unsafe_allow_html=True)
 
-# SIDEBAR
+# SIDEBAR (unchanged)
 with st.sidebar:
     st.title("System Status")
     
